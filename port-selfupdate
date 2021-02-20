@@ -1,0 +1,4 @@
+#!/bin/bash
+
+sudo /opt/macports/bin/port selfupdate
+

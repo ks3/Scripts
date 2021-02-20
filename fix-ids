@@ -1,0 +1,51 @@
+#!/opt/macports/bin/bash
+
+# user data, uid:gid
+declare -A users
+users['root']='0:0'
+
+# group data, gid
+declare -A groups
+groups['wheel']='0'
+
+
+s="${0##*/}"
+if [[ -e "${HOME}/.${s}.conf" ]]; then
+    source "${HOME}/.${s}.conf"
+fi
+
+
+for group in "${!groups[@]}"; do
+    gid="${groups[$group]}"
+    ds_gid=$(dscl . -read "/Groups/${group}" | awk '/^PrimaryGroupID:/ {print $2}')
+    if [[ $ds_gid -ne $gid ]]; then
+        echo "Group ${group} has incorrect GID. ($ds_gid != $gid)"
+        if [[ $EUID -eq 0 ]]; then
+            dscl . -change "/Groups/${group}" PrimaryGroupID "${ds_gid}" "${gid}"
+        fi
+    fi
+done
+
+for user in "${!users[@]}"; do
+    ids="${users[$user]}"
+    uid="${ids%:*}"
+    gid="${ids#*:}"
+
+    ds_uid=$(dscl . -read "/Users/${user}" | awk '/^UniqueID:/ {print $2}')
+    if [[ $ds_uid -ne $uid ]]; then
+        if [[ $EUID -eq 0 ]]; then
+            dscl . -change "/Users/${user}" UniqueID "${ds_uid}" "${uid}"
+        else
+            echo "User ${user} has incorrect UID. ($ds_uid != $uid)"
+        fi
+    fi
+
+    ds_gid=$(dscl . -read "/Users/${user}" | awk '/^PrimaryGroupID:/ {print $2}')
+    if [[ $ds_gid -ne $gid ]]; then
+        if [[ $EUID -eq 0 ]]; then
+            dscl . -change "/Users/${user}" PrimaryGroupID "${ds_gid}" "${gid}"
+        else
+            echo "User ${user} has incorrect primary GID. ($ds_gid != $gid)"
+        fi
+    fi
+done

@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+declare -r APP_DIR="$HOME/Applications"
+declare -r BASE_URL="https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Mac"
+declare -r WORK_DIR="$HOME/.chromium"
+
+declare -r PLIST="${APP_DIR}/Chromium.app/Contents/Info.plist"
+declare -r ENV_APPEND="GOOGLE_API_KEY=no; GOOGLE_DEFAULT_CLIENT_ID=no; GOOGLE_DEFAULT_CLIENT_SECRET=no;"
+
+[[ -e "$WORK_DIR" ]] || mkdir -p "$WORK_DIR"
+cd "$WORK_DIR" || exit 255
+
+
+current_version=0
+if [[ -e "$WORK_DIR/version" ]]; then
+    current_version="$(cat version)"
+fi
+
+
+latest_version="$(curl -s "$BASE_URL%2fLAST_CHANGE?alt=media")"
+if [[ -z $latest_version ]]; then
+    echo "Failed to determine last Chromium change"
+    exit 1
+fi
+
+
+if [[ $latest_version != "$current_version" ]]; then
+    echo "New version available ($current_version -> $latest_version)"
+    curl -s -o chromium.zip "$BASE_URL%2f$latest_version%2fchrome-mac.zip?alt=media"
+    unzip -qq chromium.zip
+    [[ -e "$APP_DIR/Chromium.app" ]] && rm -rf "$APP_DIR/Chromium.app"
+    [[ -e "$APP_DIR" ]] || mkdir -p "$APP_DIR"
+    mv chrome-mac/Chromium.app "$APP_DIR/"
+
+    env="$(defaults read "$PLIST" LSEnvironment | grep -v '[{}]')"
+
+    defaults write "$PLIST" LSEnvironment "{ $env $ENV_APPEND }"
+    rm -r chrome-mac
+    echo "$latest_version" > version
+fi
+

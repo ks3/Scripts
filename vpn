@@ -147,7 +147,7 @@ if [[ -n $connection ]]; then
         fi
     else
         if [[ $BACKEND == openconnect ]]; then
-            GetPassword "${USER}" | sudo "${OPENCONNECT}" "${HOST}" --config="${HOST}/${USER}.conf" --user="${USER}" --passwd-on-stdin &>/dev/null
+            GetPassword "${USER}" | sudo "${OPENCONNECT}" "${HOST}" --config="${HOST}/${USER}.conf" --user="${USER}" --passwd-on-stdin
         elif [[ $BACKEND == openvpn ]]; then
             (echo "${USER}"; GetPassword "${USER}") | sudo "${OPENVPN}" "${HOST}/${USER}.conf" &>/dev/null
         fi

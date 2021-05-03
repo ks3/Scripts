@@ -1,4 +1,13 @@
 #!/bin/bash
 
-sudo /opt/macports/bin/port selfupdate
+cmd="sudo /opt/macports/bin/port selfupdate"
+maxrun=900
+
+if hash timeout &>/dev/null; then
+    timeout $maxrun $cmd
+elif hash gtimeout &>/dev/null; then
+    gtimeout $maxrun $cmd
+else
+    $cmd
+fi
 

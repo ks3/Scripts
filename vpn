@@ -53,14 +53,24 @@ function GetPassword() {
     declare -r DESC="Please enter the password for user ${USER} on host ${HOST}"
     declare -r PROMPT="Password:"
 
-    if [[ ! -t 0 ]]; then
-        echo -en "SETDESC ${DESC}\nSETPROMPT ${PROMPT}\nGETPIN\n" | ${PINENTRY} | awk '/^D / {print $2}'
-    else
-        echo "$DESC" >&2
-        read -r -s -p "$PROMPT"
-        echo >&2
-        echo "$REPLY"
+    local password
+
+    if [[ $OSTYPE =~ ^darwin ]]; then
+        password="$(security -q find-generic-password -a "${USER}" -l "${HOST}" -w)"
     fi
+
+    if [[ -z $password ]]; then
+        if [[ ! -t 0 ]]; then
+            password="$(echo -en "SETDESC ${DESC}\nSETPROMPT ${PROMPT}\nGETPIN\n" | ${PINENTRY} | awk '/^D / {print $2}')"
+        else
+            echo "$DESC" >&2
+            read -r -s -p "$PROMPT"
+            echo >&2
+            password="$REPLY"
+        fi
+    fi
+
+    echo "$password"
 }
 
 function IsAnyConnectionActive() {

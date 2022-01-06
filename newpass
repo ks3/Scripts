@@ -1,0 +1,16 @@
+#!/bin/bash
+
+length=20
+[[ -n $1 ]] && length=$1
+
+chars=$((length - 2))
+g1len=$((chars / 3))
+g3len=$(((chars - g1len) / 2))
+g2len=$((chars - g1len - g3len))
+
+g1=$(pwgen --ambiguous --secure $g1len 1)
+g2=$(pwgen --ambiguous --secure $g2len 1)
+g3=$(pwgen --ambiguous --secure $g3len 1)
+
+echo -n "$g1-$g2-$g3"
+echo >&2

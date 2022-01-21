@@ -1,0 +1,13 @@
+#!/bin/bash
+
+cmd="sudo /opt/macports/bin/port sync"
+maxrun=900
+
+if hash timeout &>/dev/null; then
+    timeout $maxrun $cmd
+elif hash gtimeout &>/dev/null; then
+    gtimeout $maxrun $cmd
+else
+    $cmd
+fi
+

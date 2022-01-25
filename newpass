@@ -1,16 +1,51 @@
 #!/bin/bash
 
-length=20
-[[ -n $1 ]] && length=$1
+declare -r PWGEN="pwgen --ambiguous --secure"
+declare -r MIN_GROUP_LENGTH=4
+declare -r MAX_GROUP_LENGTH=8
 
-chars=$((length - 2))
-g1len=$((chars / 3))
-g3len=$(((chars - g1len) / 2))
-g2len=$((chars - g1len - g3len))
+declare length=20
+declare separators="-"
+declare newpass=""
 
-g1=$(pwgen --ambiguous --secure $g1len 1)
-g2=$(pwgen --ambiguous --secure $g2len 1)
-g3=$(pwgen --ambiguous --secure $g3len 1)
+while [[ -n $* ]]; do
+    if [[ $1 =~ ^[1-9][0-9]*$ ]]; then
+        length=$1
+    else
+        separators="$1"
+    fi
+    shift
+done
 
-echo -n "$g1-$g2-$g3"
+if [[ $length -le 10 ]]; then
+    newpass="$($PWGEN "$length" 1)"
+else
+    while [[ ${#newpass} -lt $length ]]; do
+        if [[ $((${#newpass} + MIN_GROUP_LENGTH * 2 + 1)) -gt $length ]]; then
+            # not enough remaining for two groups of smallest length plus separator
+            grouplen=$((length - ${#newpass}))
+        else
+            while : ; do
+                grouplen=$((RANDOM % $((MAX_GROUP_LENGTH - MIN_GROUP_LENGTH + 1)) + MIN_GROUP_LENGTH))
+                [[ $((${#newpass} + grouplen + MIN_GROUP_LENGTH + 1)) -le $length ]] && break
+            done
+        fi
+
+        group="$(PWGEN "$grouplen" 1)"
+        newpass="${newpass}${group}"
+
+        if [[ ${#newpass} -lt $length ]]; then
+            separator="$separators"
+            if [[ ${#separators} -gt 1 ]]; then
+                index=$((RANDOM % ${#separators}))
+                echo "Using $index of $separators"
+                separator="${separators:$index:1}"
+                echo "separator=$separator"
+            fi
+            newpass="${newpass}${separator}"
+        fi
+    done
+fi
+
+echo -n "$newpass"
 echo >&2

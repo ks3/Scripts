@@ -106,35 +106,34 @@ cd ~/.vpn || exit 255
 # ensure settings file exists
 if [[ ! -e ~/.vpn/settings.sh ]]; then
     cat > ~/.vpn/settings.sh <<-_EOF_
-		#!/bin/bash
+	#!/bin/bash
 
-		declare -r OPENCONNECT='openconnect'
-		declare -r OPENVPN='openvpn'
-		declare -r CONNECTED='VPN | color=black'
-		declare -r DISCONNECTED='VPN | color=#cccccc'
+	declare -r OPENCONNECT='openconnect'
+	declare -r OPENVPN='openvpn'
+	declare -r CONNECTED='VPN | color=black'
+	declare -r DISCONNECTED='VPN | color=#cccccc'
 
-		CONNECTIONS+=('Cisco Connection|openconnect|host|user')
-		CONNECTIONS+=('OpenVPN Connection|openvpn|host|user')
-		_EOF_
+	CONNECTIONS+=('Cisco Connection|openconnect|host|user')
+	CONNECTIONS+=('OpenVPN Connection|openvpn|host|user')
+	_EOF_
 fi
+
 
 # source settings file
 [[ -e ~/.vpn/settings.sh ]] && source ~/.vpn/settings.sh
 
 
-
 GetConnectionNames
 
-if [[ -n $1 && -z $TEXTBAR_TEXT ]]; then
+# connection was selected from TextBar menu or given on command line
+if [[ -n $TEXTBAR_TEXT ]]; then
+    connection="${TEXTBAR_TEXT%%	*}"
+elif [[ -n $1 ]]; then
     connection="$1"
-elif [[ -n $TEXTBAR_TEXT ]]; then
-    connection="${TEXTBAR_TEXT}"
-    connection="${connection%connected}"
-    connection="${connection%dis}"
-    connection="${connection%%*( )}"
 fi
 
 
+# connection given, connect or disconnect
 if [[ -n $connection ]]; then
     FillConnectionDetails "${connection}"
     if [[ -z $BACKEND || -z $HOST || -z $USER ]]; then
@@ -168,18 +167,32 @@ fi
 
 
 if [[ ! -t 0 ]]; then
+    # running from TextBar, give overall connection status
     if IsAnyConnectionActive; then
         echo -e "${CONNECTED}"
     else
         echo -e "${DISCONNECTED}"
     fi
+
+    # set TextBar output format for individual connections
+    format="%s\t\t%s"
+else
+    # set CLI output format for individual connections
+    maxlen=1
+    for name in "${NAMES[@]}"; do
+        if [[ "${#name}" -gt $maxlen ]]; then
+            maxlen=$((${#name}+2))
+        fi
+    done
+    format="%-${maxlen}s %s"
 fi
+
 
 for connection in "${NAMES[@]}"; do
     if IsConnectionActive "${connection}"; then
-        output="$(printf "%-25s %s" "$connection" "\e[90mconnected\e[0m")"
+        output="$(printf "$format" "$connection" "\e[90mconnected\e[0m")"
     else
-        output="$(printf "%-25s %s" "$connection" "\e[90mdisconnected\e[0m")"
+        output="$(printf "$format" "$connection" "\e[90mdisconnected\e[0m")"
     fi
 
     if [[ -t 0 ]]; then

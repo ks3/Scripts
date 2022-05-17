@@ -1,4 +1,4 @@
-#!/opt/macports/bin/bash
+#!/usr/bin/env bash
 
 # user data, uid:gid
 declare -A users

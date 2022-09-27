@@ -17,7 +17,7 @@ fi
 
 for group in "${!groups[@]}"; do
     gid="${groups[$group]}"
-    ds_gid=$(dscl . -read "/Groups/${group}" | awk '/^PrimaryGroupID:/ {print $2}')
+    ds_gid=$(dscl . -read "/Groups/${group}" PrimaryGroupID | awk '{print $2}')
     if [[ $ds_gid -ne $gid ]]; then
         echo "Group ${group} has incorrect GID. ($ds_gid != $gid)"
         if [[ $EUID -eq 0 ]]; then
@@ -31,7 +31,7 @@ for user in "${!users[@]}"; do
     uid="${ids%:*}"
     gid="${ids#*:}"
 
-    ds_uid=$(dscl . -read "/Users/${user}" | awk '/^UniqueID:/ {print $2}')
+    ds_uid=$(dscl . -read "/Users/${user}" UniqueID | awk '{print $2}')
     if [[ $ds_uid -ne $uid ]]; then
         if [[ $EUID -eq 0 ]]; then
             dscl . -change "/Users/${user}" UniqueID "${ds_uid}" "${uid}"
@@ -40,7 +40,7 @@ for user in "${!users[@]}"; do
         fi
     fi
 
-    ds_gid=$(dscl . -read "/Users/${user}" | awk '/^PrimaryGroupID:/ {print $2}')
+    ds_gid=$(dscl . -read "/Users/${user}" PrimaryGroupID | awk '{print $2}')
     if [[ $ds_gid -ne $gid ]]; then
         if [[ $EUID -eq 0 ]]; then
             dscl . -change "/Users/${user}" PrimaryGroupID "${ds_gid}" "${gid}"

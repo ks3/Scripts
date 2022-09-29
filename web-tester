@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+
+if [[ ! -e urls.txt ]]; then
+    echo "No urls.txt found. This file must exist in your current directory." >&2
+    exit 1
+fi
+
+
+declare -a URLS
+while read -r url; do
+    URLS+=("$url")
+done < urls.txt
+
+declare -i total=0
+declare -i errors=0
+
+
+declare -r GREEN="\e[38;5;34m"
+declare -r RED="\e[38;5;124m"
+declare -r RESET="\e[00m"
+
+
+trap 'echo; echo "stats: ${total} requests / ${errors} errors"; exit 0' INT
+stty -echoctl
+
+
+while : ; do
+
+    for url in "${URLS[@]}"; do
+
+        color="${GREEN}"
+
+        status=$(curl -s -o /dev/null -w "%{http_code}" "$url")
+        total+=1
+        if [[ $status != 200 ]]; then
+            errors+=1
+            color="${RED}"
+            echo -n $'\a'
+        fi
+
+        echo -e "${color}$(date -Iseconds)  ${status}  ${url}${RESET}"
+
+    done
+
+    sleep 2
+
+done

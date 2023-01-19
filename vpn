@@ -137,15 +137,24 @@ fi
 if [[ -n $connection ]]; then
     FillConnectionDetails "${connection}"
     if [[ -z $BACKEND || -z $HOST || -z $USER ]]; then
-        osascript \
-            -e 'on run(argv)' \
-            -e 'tell application "System Events"' \
-            -e '  display dialog item 1 of argv buttons {"OK"} with icon caution with title "No such connection"' \
-            -e '  return' \
-            -e 'end tell' \
-            -e 'end' \
-            -- "Connection ${connection} not found"
-        exit 255
+        if [[ ! -t 0 ]]; then
+            osascript \
+                -e 'on run(argv)' \
+                -e 'tell application "System Events"' \
+                -e '  display dialog item 1 of argv buttons {"OK"} with icon caution with title "No such connection"' \
+                -e '  return' \
+                -e 'end tell' \
+                -e 'end' \
+                -- "Connection ${connection} not found"
+            exit 255
+        else
+            echo "No such connection: ${connection}" >&2
+            echo "Valid connections:" >&2
+            for name in "${NAMES[@]}"; do
+                echo "  $name" >&2
+            done
+            exit 255
+        fi
     fi
 
     if IsConnectionActive "${connection}"; then
@@ -175,7 +184,7 @@ if [[ ! -t 0 ]]; then
     fi
 
     # set TextBar output format for individual connections
-    format="%s\t\t%s"
+    format="%s\t\t\t%s"
 else
     # set CLI output format for individual connections
     maxlen=1

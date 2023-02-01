@@ -90,17 +90,20 @@ def main():
     xpath = ENC_DATA_XPATH + '/ds:KeyInfo/xenc:EncryptedKey/xenc:CipherData/xenc:CipherValue'
     encrypted_key = xml.xpath(xpath, namespaces=ns)[0].text
     decrypted_key = decrypt_RSA(opts.private_key_path, encrypted_key)
-#    print('decrypted key: ' + str(decrypted_key))
 
     encrypted_message = xml.xpath(ENC_DATA_XPATH + '/xenc:CipherData/xenc:CipherValue', namespaces=ns)[0].text
     decrypted_message = decrypt_AES(decrypted_key, encrypted_message)
-#    print('decrypted message: ' + str(decrypted_message))
-    output = str(decrypted_message)
+    if isinstance(decrypted_message, bytes):
+        output = decrypted_message.decode('latin1')
+    else:
+        output = decrypted_message
 
-    SAML_ASSERTION_START_MARKER = '<saml2:Assertion '
-    SAML_ASSERTION_END_MARKER = '</saml2:Assertion>'
-    saml_assertion_start = output.find(SAML_ASSERTION_START_MARKER)
-    saml_assertion_end = output.find(SAML_ASSERTION_END_MARKER) + len(SAML_ASSERTION_END_MARKER)
+    saml_assertion_tag = "Assertion"
+    saml_assertion_start = output.find(f"<{saml_assertion_tag} ")
+    if saml_assertion_start == -1:
+        saml_assertion_tag = "saml2:" + saml_assertion_tag
+        saml_assertion_start = output.find(f"<{saml_assertion_tag} ")
+    saml_assertion_end = output.find(f"</{saml_assertion_tag}>") + len(f"</{saml_assertion_tag}>")
     output = output[saml_assertion_start:saml_assertion_end]
 
     if opts.pretty_print:
